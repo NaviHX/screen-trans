@@ -8,8 +8,6 @@ from tkinter import *
 from functools import partial
 import threading
 
-Trans = Translator(service_urls='translate.google.cn')
-
 flag = False
 state = 0
 start_x = 0
@@ -84,15 +82,15 @@ def coordinate_swap(sx, sy, dx, dy):
 
 def img_trans(img, langs):
     try:
-        ret=''
+        ret = ''
         text = pytesseract.image_to_string(img)
         split_text = text.replace("\n", " ").split(".")
         for i in split_text:
             if i != "":
                 i += "."
-                translator = Translator()
-                translation = translator.translate(i, dest="zh-CN")
-                ret+=translation
+                translator = Translator(service_urls=['translate.google.cn'])
+                translation = translator.translate(i, dest="zh-CN").text
+                ret += translation
         return ret
     except Exception as e:
         print(e)
@@ -130,6 +128,7 @@ def on_click(x, y, button, pressed):
 
 def on_press(key):
     global flag
+    global state
     try:
         if key.char == 's':
             print('开始记录坐标')
@@ -137,6 +136,7 @@ def on_press(key):
         elif key.char == 'q':
             print('结束记录坐标')
             flag = False
+            state = 0
     except:
         1 + 1
 
