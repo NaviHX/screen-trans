@@ -15,14 +15,17 @@ start_y = 0
 dest_x = 0
 dest_y = 0
 language = 'eng'
+code = 'en'
 support_lang = ['eng', 'jpn']
+lang_code = ['en', 'ja']
 change_func = []
 
 
-def change_lang(label, lang):
+def change_lang(label, lang, lcode):
     global language
-    global lang_var
+    global code
     language = lang
+    code = lcode
     label['text'] = '当前语言: {}'.format(lang)
 
 
@@ -47,7 +50,11 @@ class GUI:
 
         for idx in range(len(support_lang)):
             lang = support_lang[idx]
-            f = partial(change_lang, label=self.now_lang, lang=lang)
+            lcode = lang_code[idx]
+            f = partial(change_lang,
+                        label=self.now_lang,
+                        lang=lang,
+                        lcode=lcode)
             change_func.append(f)
             b = Button(self.window,
                        text=lang,
@@ -60,6 +67,9 @@ class GUI:
         self.trans = Text(self.window, height=10, width=40)
         self.trans.grid(row=0, column=1, rowspan=10)
         self.trans.insert(1.0, '翻译文本')
+
+        self.work_state = Label(self.window, text='等待激活(S键激活)')
+        self.work_state.grid(row=2+len(support_lang),column=0)
 
     def set_trans(self, s):
         self.trans.delete(1.0, END)
@@ -83,13 +93,17 @@ def coordinate_swap(sx, sy, dx, dy):
 def img_trans(img, langs):
     try:
         ret = ''
-        text = pytesseract.image_to_string(img)
+        text = pytesseract.image_to_string(img, lang=language)
+        print(language)
+        print(code)
+        print(text)
         split_text = text.replace("\n", " ").split(".")
         for i in split_text:
             if i != "":
                 i += "."
                 translator = Translator(service_urls=['translate.google.cn'])
-                translation = translator.translate(i, dest="zh-CN").text
+                translation = translator.translate(i, dest="zh-CN",
+                                                   src=code).text
                 ret += translation
         return ret
     except Exception as e:
@@ -123,7 +137,9 @@ def on_click(x, y, button, pressed):
             s = img_trans(get_img(start_x, start_y, dest_x, dest_y),
                           langs=language)
             gui.set_trans(s)
+            gui.work_state['text'] = '等待激活(S键激活)'
             state = 0
+            flag = 0
 
 
 def on_press(key):
@@ -132,9 +148,11 @@ def on_press(key):
     try:
         if key.char == 's':
             print('开始记录坐标')
+            gui.work_state['text'] = '鼠标点击输入坐标(q键中断)'
             flag = True
         elif key.char == 'q':
-            print('结束记录坐标')
+            print('中断记录坐标')
+            gui.work_state['text'] = '输入中断'
             flag = False
             state = 0
     except:
